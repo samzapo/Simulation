@@ -1,0 +1,141 @@
+\NeedsTeXFormat{LaTeX2e}
+\documentclass[10pt,letterpaper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\setlength{\parskip}{\smallskipamount}
+\setlength{\parindent}{0pt}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{float}
+%\usepackage{bm}
+%\usepackage{times}
+\usepackage{color}
+%\usepackage[margin=0.5in]{geometry}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{verbatim}
+
+\addtolength{\voffset}{-1in}
+\addtolength{\hoffset}{-1.5in}
+\setlength{\topmargin}{2.5cm}
+\setlength{\oddsidemargin}{2.5cm}
+\setlength{\evensidemargin}{2.5cm}
+\setlength{\textwidth}{16.5cm}
+\setlength{\textheight}{23cm}
+\setlength{\footskip}{36pt}
+\setlength{\marginparsep}{0.5cm}
+\setlength{\marginparwidth}{1.5cm}
+\setlength{\headheight}{0pt}
+\setlength{\headsep}{10pt}
+
+\setcounter{MaxMatrixCols}{20}
+\providecommand{\inv}[1]{{#1}^{\ensuremath{\mathsf{-1}}}} % inverse ...
+\providecommand{\tr}[1]{{#1}^{\ensuremath{\mathsf{T}}}} % transpose ...
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\left\lVert#1\right\rVert}
+\providecommand{\vect}[1]{\boldsymbol#1}
+\providecommand{\mat}[1]{\mathbf#1}
+\providecommand{\bigTheta}{\mathit{\Theta}}
+\providecommand{\bigO}{\mathit{O}}
+\providecommand{\algorithmtopspace}
+
+\title{\textbf{Kinematics} }
+\author{Sam Zapolsky}
+\date{}
+
+\definecolor{light-gray}{gray}{0.95}
+
+\lstset{
+language=Matlab,
+backgroundcolor=\color{white},
+basicstyle=\footnotesize,
+showstringspaces=false
+}
+
+
+\begin{document}
+\maketitle
+	\section*{Problem 1}
+	\[		
+	_s\mat{R}_w = \begin{bmatrix}\cos(\varphi^s_w) &-\sin(\varphi^s_w) \\ \sin(\varphi^s_w) & \cos(\varphi^s_w)\end{bmatrix} 
+	\]
+	\[		
+	\vect{q}_s = \begin{bmatrix} _s\mat{R}_w \begin{bmatrix} \bar{x}_w \\ \bar{y}_w \end{bmatrix} + \vect{x}^s_w \\ \theta_w + \varphi^s_w \end{bmatrix}
+	\]
+	
+	\[		
+	_s\dot{\mat{R}}_w = \dot{\varphi}^s_w\begin{bmatrix}-\sin(\varphi^s_w) &-\cos(\varphi^s_w) \\ \cos(\varphi^s_w) & -\sin(\varphi^s_w)\end{bmatrix} 
+	\]
+	\[		
+	\dot{\vect{q}}_s = \begin{bmatrix} _s\dot{\mat{R}}_w \begin{bmatrix} \dot{\bar{x}}_w \\ \dot{\bar{y}}_w \end{bmatrix} + \dot{\vect{x}}^s_w \\ \dot{\theta}_w + \dot{\varphi}^s_w \end{bmatrix}
+	\]
+	
+	\[		
+	_s\ddot{\mat{R}}_w = \ddot{\varphi}^s_w \begin{bmatrix}-\cos(\varphi^s_w) &-\sin(\varphi^s_w) \\ -\sin(\varphi^s_w) & \cos(\varphi^s_w)\end{bmatrix} 
+	\]
+	\[		
+	\ddot{\vect{q}}_s = \begin{bmatrix} _s\ddot{\mat{R}}_w \begin{bmatrix} \ddot{\bar{x}}_w \\ \ddot{\bar{y}}_w \end{bmatrix} + \ddot{\vect{x}}^s_w \\ \ddot{\theta}_w + \ddot{\varphi}^s_w \end{bmatrix}
+	\]
+
+	\section*{Problem 2}
+	Given:
+	\[
+	\vect{X}^w_s = \begin{bmatrix} -\vect{x}^s_w \\ \varphi^w_s \end{bmatrix} = \begin{bmatrix} -1 \\ 1 \\ \pi/4 \end{bmatrix}
+	\]
+	\[
+	\dot{\vect{X}}^s_w = \begin{bmatrix} \dot{\bar{\vect{x}}}_w \\ \dot{\varphi^w_s} \end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix}
+	\]
+
+	\[
+	\vect{q}_w = \begin{bmatrix} \bar{\vect{x}}_w \\ \theta_w \end{bmatrix} = \begin{bmatrix} 5 \\ 5 \\ \frac{\pi}{6} \end{bmatrix}
+	\]
+	\[
+	\dot{\vect{q}}_w = \begin{bmatrix} \dot{\bar{\vect{x}}}_w \\ \dot{\theta}_w \end{bmatrix} = \begin{bmatrix} -1 \\ 1 \\ -2 \end{bmatrix}
+	\]
+	\[
+	\ddot{\vect{q}}_w = \begin{bmatrix} \ddot{\bar{\vect{x}}}_w \\ \ddot{\theta}_w \end{bmatrix} = \begin{bmatrix} 10 \\ 1 \\ 10 \end{bmatrix}
+	\]
+	compute $\dot{\vect{q}}_s$ and $\ddot{\vect{q}}_s$:
+
+	\section*{Problem 3}
+	\[
+		\ddot{\vect{p}}_w = \begin{bmatrix} \ddot{\bar{x}}_w \\ \ddot{\bar{y}}_w \end{bmatrix} +  _w\ddot{\mat{R}}_i \cdot \ddot{\vect{r}}_i
+	\]
+	\section*{Problem 4}
+		\[
+		\ddot{\vect{p}}_s =\ _w\ddot{\mat{R}}_s \left( \begin{bmatrix} \ddot{\bar{x}}_w \\ \ddot{\bar{y}}_w \end{bmatrix} +  _s\ddot{\mat{R}}_i \cdot \ddot{\vect{r}}_i \right) + \ddot{\vect{x}}^s_w
+		\]
+	\section*{Problem 5}	
+Given:
+	\[
+	\vect{X}^s_w = \begin{bmatrix} -\vect{x}^s_w \\ \varphi^s_w \end{bmatrix} = \begin{bmatrix} 1 \\ -1 \\ \pi/4 \end{bmatrix}
+	\]
+	\[
+	\dot{\vect{X}}^s_w = \begin{bmatrix} \dot{\bar{\vect{x}}}^s_w \\ \dot{\varphi^s_w} \end{bmatrix} = \begin{bmatrix} \frac{\sqrt{2}}{2} \\ \frac{\sqrt{2}}{2} \\ 1 \end{bmatrix}
+	\]
+	\[
+	\ddot{\vect{X}}^s_w = \begin{bmatrix} \ddot{\bar{\vect{x}}}^s_w \\ \ddot{\varphi^s_w} \end{bmatrix} = \begin{bmatrix} 10 \\ -10 \\ 0 \end{bmatrix}
+	\]
+	\[
+	\vect{q}_w = \begin{bmatrix} \bar{\vect{x}}_w \\ \theta_w \end{bmatrix} = \begin{bmatrix} 5 \\ 5 \\ \frac{\pi}{6} \end{bmatrix}
+	\]
+	\[
+	\dot{\vect{q}}_w = \begin{bmatrix} \dot{\bar{\vect{x}}}_w \\ \dot{\theta}_w \end{bmatrix} = \begin{bmatrix} -1 \\ 1 \\ -2 \end{bmatrix}
+	\]
+	\[
+	\ddot{\vect{q}}_w = \begin{bmatrix} \ddot{\bar{\vect{x}}}_w \\ \ddot{\theta}_w \end{bmatrix} = \begin{bmatrix} 10 \\ 1 \\ 10 \end{bmatrix}
+	\]
+	\[
+	\vect{p}_w = \begin{bmatrix} 0 \\ 0 \end{bmatrix}
+	\]
+	compute $\ddot{\vect{p}}_s$:
+%\begin{figure}[H]
+%	\begin{center}
+%		\includegraphics[width=4in]{4a.png}
+%		\label{default}
+%	\end{center}
+%\end{figure}
+	
+\end{document}
+
