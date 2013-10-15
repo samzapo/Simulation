@@ -49,6 +49,7 @@ void RigidBody::reset(){
       vertices.push_back(Ravelin::Vector3d(-0.5,-0.5,-0.5));
       q[1] = 1; q[6] = 1;
       v[0] = 1;
+      v[4] = 1;
       f.set_zero(6);
       Tws.set_identity(4);
       m = 1;
@@ -129,59 +130,55 @@ void RigidBody::apply_force(const Ravelin::Vector3d& fp,
 Vec& RigidBody::calc_jacobian(const Ravelin::Vector3d& fp,
                               const Ravelin::Vector3d& p,Vec& jrow){
   FILE_LOG(logDEBUG)<<"entered RigidBody::calc_jacobian(.)"<<std::endl;
-
-  Vec gf(6);
-  gf.set_sub_vec(0,fp);
+  jrow.set_sub_vec(0,fp);
   workv3_ = p;
   workv3_ -= com;
-  gf.set_sub_vec(3,Ravelin::Vector3d::cross(workv3_,fp));
-  gf;
+  jrow.set_sub_vec(3,Ravelin::Vector3d::cross(workv3_,fp));
 
-  Ravelin::Matrix3d D,E,F;
+//  Ravelin::Matrix3d D,E,F;
 
-  // Force is at COM and so is the acceleration we want to retrieve c = 0
-  Ravelin::Vector3d c = Ravelin::Vector3d::zero();
+//  // Force is at COM and so is the acceleration we want to retrieve c = 0
+//  Ravelin::Vector3d c = Ravelin::Vector3d::zero();
 
-  // D
-  D.set_identity();
-  D*=m;
+//  // D
+//  D.set_identity();
+//  D*=m;
 
-  // E
-  E = (skew(c,workM3_) *= m);
+//  // E
+//  E = (skew(c,workM3_) *= m);
 
-  // F
-  skew(c,workM3_);
-  workM3_.mult(workM3_,F);
-  F *= m;
-  F= -F;
-  F += Icm;
+//  // F
+//  skew(c,workM3_);
+//  workM3_.mult(workM3_,F);
+//  F *= m;
+//  F= -F;
+//  F += Icm;
 
-  Mat A(6,6);
-  A.set_sub_mat(0,0,D);
-  A.set_sub_mat(3,0,E);
-  E = -E;
-  A.set_sub_mat(0,3,E);
-  A.set_sub_mat(3,3,F);
+//  Mat A(6,6);
+//  A.set_sub_mat(0,0,D);
+//  A.set_sub_mat(3,0,E);
+//  E = -E;
+//  A.set_sub_mat(0,3,E);
+//  A.set_sub_mat(3,3,F);
 
-  Ravelin::Vector3d d, e;
+//  Ravelin::Vector3d d, e;
 
-  // d
-  Ravelin::Vector3d w;
-  v.get_sub_vec(3,6,w);
-  d = Ravelin::Vector3d::cross(w,Ravelin::Vector3d::cross(w,c));
-  d *= m;
-  // e
-  e = Ravelin::Vector3d::cross(w,F.mult(w,workv3_));
-  Vec b(6);
-  b.set_sub_vec(0,d);
-  b.set_sub_vec(3,e);
-  b.negate();
-  b += gf;
+//  // d
+//  Ravelin::Vector3d w;
+//  v.get_sub_vec(3,6,w);
+//  d = Ravelin::Vector3d::cross(w,Ravelin::Vector3d::cross(w,c));
+//  d *= m;
+//  // e
+//  e = Ravelin::Vector3d::cross(w,F.mult(w,workv3_));
+//  Vec b(6);
+//  b.set_sub_vec(0,d);
+//  b.set_sub_vec(3,e);
+//  b.negate();
+//  b += gf;
 
-  // solve for acceleration
-  LA_.factor_chol(A);
-  Ravelin::LinAlgd::solve_chol_fast(A,b);
-  jrow = b;
+//  // solve for acceleration
+//  LA_.factor_chol(A);
+//  Ravelin::LinAlgd::solve_chol_fast(A,b);
 
   FILE_LOG(logDEBUG) << "Jacobian Row = " << jrow << std::endl;
   FILE_LOG(logDEBUG)<<"exited RigidBody::calc_jacobian(.)"<<std::endl;
@@ -319,20 +316,16 @@ FILE_LOG(logDEBUG)<<"fwd dynamics forces = " << f << std::endl;
 
 Mat& calc_q_GL(const Vec& e,Mat& L){
   L.set_zero(3,4);
-  // NOTE: is e = [x y z w] or [w x y z]?
+  // NOTE: [w x y z]
 
   // G
-//  L(0,0) = -e[0]; L(0,1) = e[3]; L(0,2) =-e[2]; L(0,3) = e[1];
-//  L(1,0) = -e[1]; L(1,1) = e[2]; L(1,2) = e[3]; L(1,3) =-e[0];
-//  L(2,0) = -e[2]; L(2,1) =-e[1]; L(2,2) = e[0]; L(2,3) = e[3];
-
+  L(0,0) = -e[1]; L(0,1) = e[0]; L(0,2) =-e[3]; L(0,3) = e[2];
+  L(1,0) = -e[2]; L(1,1) = e[3]; L(1,2) = e[0]; L(1,3) =-e[1];
+  L(2,0) = -e[3]; L(2,1) =-e[2]; L(2,2) = e[1]; L(2,3) = e[0];
   // L
-  L(0,0) = -e[0]; L(0,1) = e[3]; L(0,2) = e[2]; L(0,3) =-e[1];
-  L(1,0) = -e[1]; L(1,1) =-e[2]; L(1,2) = e[3]; L(1,3) = e[0];
-  L(2,0) = -e[2]; L(2,1) = e[1]; L(2,2) =-e[0]; L(2,3) = e[3];
-//   L(0,1) = e[3]; L(0,1) = e[2]; L(0,2) =-e[1];L(0,3) = -e[0];
-//   L(1,1) =-e[2]; L(1,1) = e[3]; L(1,2) = e[0];L(1,3) = -e[1];
-//   L(2,1) = e[1]; L(2,1) =-e[0]; L(2,2) = e[3];L(2,3) = -e[2];
+//  L(0,0) = -e[1]; L(0,1) = e[0]; L(0,2) = e[3]; L(0,3) =-e[2];
+//  L(1,0) = -e[2]; L(1,1) =-e[3]; L(1,2) = e[0]; L(1,3) = e[1];
+//  L(2,0) = -e[3]; L(2,1) = e[2]; L(2,2) =-e[1]; L(2,3) = e[0];
 }
 
 Vec *vd_;
@@ -416,21 +409,17 @@ void RigidBody::step(double dt){
 
 Mat& e2R(const Vec& e,Ravelin::Matrix3d& R){
 //  Vec e(4);
-//  e[0] = q[3];
-//  e[1] = q[0];
-//  e[2] = q[1];
-//  e[3] = q[2];
-  R(0,0) = 2*(e[0]*e[0] + e[3]*e[3])-1;
-  R(0,1) = 2*(e[0]*e[1] - e[2]*e[3]);
-  R(0,2) = 2*(e[0]*e[2] + e[1]*e[3]);
+  R(0,0) = 2*(e[1]*e[1] + e[0]*e[0])-1;
+  R(0,1) = 2*(e[1]*e[2] - e[3]*e[0]);
+  R(0,2) = 2*(e[1]*e[3] + e[2]*e[0]);
 
-  R(1,0) = 2*(e[0]*e[1] + e[2]*e[3]);
-  R(1,1) = 2*(e[1]*e[1] + e[3]*e[3])-1;
-  R(1,2) = 2*(e[1]*e[2] - e[0]*e[3]);
+  R(1,0) = 2*(e[1]*e[2] + e[3]*e[0]);
+  R(1,1) = 2*(e[2]*e[2] + e[0]*e[0])-1;
+  R(1,2) = 2*(e[2]*e[3] - e[1]*e[0]);
 
-  R(2,0) = 2*(e[0]*e[2] - e[1]*e[3]);
-  R(2,1) = 2*(e[1]*e[2] + e[0]*e[3]);
-  R(2,2) = 2*(e[2]*e[2] + e[3]*e[3])-1;
+  R(2,0) = 2*(e[1]*e[3] - e[2]*e[0]);
+  R(2,1) = 2*(e[2]*e[3] + e[1]*e[0]);
+  R(2,2) = 2*(e[3]*e[3] + e[0]*e[0])-1;
 }
 
 void transform(const Mat& T, Ravelin::Vector3d& v){

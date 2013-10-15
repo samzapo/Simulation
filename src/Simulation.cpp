@@ -16,29 +16,21 @@ using namespace Sim;
     grav.set_zero(6);
     grav[1] = -9.8;
 
-//    bool UPDATE_SYSTEM = true;
-//    while (UPDATE_SYSTEM){
-      // apply gravity
-      for(int i=0;i<n;i++)
-        if(!rbs_[i]->static_)
-          rbs_[i]->set_acceleration(grav);
+    // apply gravity
+    for(int i=0;i<n;i++)
+      if(!rbs_[i]->static_)
+        rbs_[i]->set_acceleration(grav);
 
-      // Step Boxes
-      for(int i=0;i<n;i++)
-        if(!rbs_[i]->static_)
-          rbs_[i]->step(step_size);
+    // Step Boxes
+    for(int i=0;i<n;i++)
+      if(!rbs_[i]->static_)
+        rbs_[i]->step(step_size);
 
-      // check for impacts
-      collisions.clear();
-      if(collision_check(collisions))
-        // Apply contact forces
-        penalty_contact(collisions);
-
-//      UPDATE_SYSTEM = false;//
-      // resolve impacts
-//    }
-
-//    visualize();
+    // check for impacts
+    collisions.clear();
+    if(collision_check(collisions))
+      // Apply contact forces
+      penalty_contact(collisions);
 
     FILE_LOG(logDEBUG)<<"exited Simulation::step()"<<std::endl;
   }
@@ -65,9 +57,9 @@ using namespace Sim;
       Ravelin::Vector3d& vert = rbs_[0]->global_vertices[v];
       FILE_LOG(logDEBUG)<<" Checking Vertex: " << vert <<std::endl;
 
-      double depth = -vert[1], last_depth = 0;
+      double depth = -vert[1];
       Contact c;
-      if(depth>0 && depth > last_depth){
+      if(depth>0){
         c.rb1 = rbs_[1];
         c.rb2 = rbs_[0];
         c.normal = Ravelin::Vector3d(0,1,0);
@@ -75,7 +67,6 @@ using namespace Sim;
         c.depth = depth;
         collisions.push_back(c);
       }
-      last_depth = depth;
     }
 
     FILE_LOG(logDEBUG)<<"exited Simulation::collision_check(.)"<<std::endl;
@@ -84,46 +75,57 @@ using namespace Sim;
   }
 
   void Simulation::penalty_contact(std::vector<Contact>& collisions){
-//    for(unsigned i=0;i<collisions.size();i++){
-      Contact& c = collisions[0];
+    FILE_LOG(logDEBUG)<<"entered Simulation::penalty_contact(.)"<<std::endl;
+
+    for(unsigned i=0;i<collisions.size();i++){
+      Contact& c = collisions[i];
       // NOTE: Tunable parameters
-      double kp= 100000,kv = -10000,ki=0;
+      double kp= 10000,kv = 50,ki=0, mu = 0.1;
+//      double kp= 10000,kv = 0,ki=0, mu = 0.1;
       // calculate magnitude of penalty force
-      Vec rvel(6);
-      Ravelin::Vector3d cn = c.normal,cvel,
+      Vec rvel(6),jrow(6);
+      Ravelin::Vector3d cn = c.normal,cf,cvel,
                        tan1(1,0,0), tan2(0,0,1);
       // Create Jacobian
       Mat J(3,6);
-      {
-        c.rb2->calc_jacobian(c.normal,c.point,workv_);
-        J.set_row(0,workv_);
-        c.rb2->calc_jacobian(tan1,c.point,workv_);
-        J.set_row(1,workv_);
-        c.rb2->calc_jacobian(tan2,c.point,workv_);
-        J.set_row(2,workv_);
 
-        // re-assign tan1 to direction of contact velocity
-        c.rb1->get_velocity(rvel) += c.rb1->get_velocity(workv_);
-        J.mult(rvel,cvel);
-        tan1[0] = cvel[0];
-        tan1[2] = cvel[2];
-        tan2 = Ravelin::Vector3d::cross(c.normal,tan1);
+      c.rb2->calc_jacobian(cn,c.point,jrow);
+      J.set_row(0,jrow);
+      c.rb2->calc_jacobian(tan1,c.point,jrow);
+      J.set_row(1,jrow);
+      c.rb2->calc_jacobian(tan2,c.point,jrow);
+      J.set_row(2,jrow);
 
-        // re-calculate tan jacobians
-        c.rb2->calc_jacobian(c.point,tan1,workv_);
-        J.set_row(1,workv_);
-        c.rb2->calc_jacobian(c.point,tan2,workv_);
-        J.set_row(2,workv_);
-      }
-
+      // re-assign tan1 to direction of contact velocity
+      c.rb1->get_velocity(rvel) += c.rb2->get_velocity(workv_);
       J.mult(rvel,cvel);
-      cn *= (kp*(c.depth) + kv*(cvel[0]));
+      tan1[0] = cvel[1];
+      tan1[2] = cvel[2];
+      tan2 = Ravelin::Vector3d::cross(c.normal,tan1);
+      FILE_LOG(logDEBUG) << "Relative vel : " << rvel << std::endl;
+      // re-calculate tan jacobians
+      c.rb2->calc_jacobian(tan1,c.point,jrow);
+      J.set_row(1,jrow);
+      c.rb2->calc_jacobian(tan2,c.point,jrow);
+      J.set_row(2,jrow);
+      J.mult(rvel,cvel);
 
-      if(!c.rb1->static_)
+      FILE_LOG(logDEBUG) << "Contact vel : " << cvel << std::endl;
+      cn *= (kp*(c.depth) - kv*(cvel[0]));
+      cf = Ravelin::Vector3d(cvel[1],0,cvel[2]);
+      cf *= cn.norm()*-mu;
+
+      if(!c.rb1->static_){
         c.rb1->apply_force(-cn,c.point);
-      if(!c.rb2->static_)
+        c.rb2->apply_force(-cf,c.point);
+      }
+      if(!c.rb2->static_){
         c.rb2->apply_force(cn,c.point);
-//    }
+        c.rb2->apply_force(cf,c.point);
+      }
+      FILE_LOG(logDEBUG) << "apply_force : " << cn << " to BOX, at : " << c.point << std::endl;
+    }
+      FILE_LOG(logDEBUG)<<"exited Simulation::penalty_contact(.)"<<std::endl;
   }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -335,8 +337,7 @@ void start_simulation(){
         assert(MAX_TIME > 0);
       }
       else if (option.find("-l=") != std::string::npos){
-          LOG_TYPE = std::atof(&argv[i][ONECHAR_ARG]);
-
+          LOG_TYPE = std::string(&argv[i][ONECHAR_ARG]);
       }
     }
     std::cout << LOG_TYPE << std::endl;
@@ -367,7 +368,7 @@ void start_simulation(){
         glutInitWindowPosition(0, 0);
 
         /* Open a window */
-        window = glutCreateWindow("Jeff Molofee's GL Code Tutorial ... NeHe '99");
+        window = glutCreateWindow("RBD Simulator -- Z4P0L15K");
 
         /* Register the function to do all our OpenGL drawing. */
         glutDisplayFunc(&DrawGLScene);
